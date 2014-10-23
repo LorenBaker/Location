@@ -1,32 +1,21 @@
 /*
- * Copyright (C) 2013 The Android Open Source Project
+ * Copyright (C) 2014 Loren A. Baker. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-package com.example.android.location;
+package com.lbconsulting.android.location;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -36,9 +25,13 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -49,24 +42,13 @@ import com.google.android.gms.common.GooglePlayServicesClient;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.location.LocationClient;
 import com.google.android.gms.location.LocationRequest;
+import com.lbconsulting.about.About;
+import com.lbconsulting.android.location.R.string;
 
-/**
- * This the app's main Activity. It provides buttons for requesting the various features of the
- * app, displays the current location, the current address, and the status of the location client
- * and updating services.
- *
- * {@link #getLocation} gets the current location using the Location Services getLastLocation()
- * function. {@link #getAddress} calls geocoding to get a street address for the current location.
- * {@link #startUpdates} sends a request to Location Services to send periodic location updates to
- * the Activity.
- * {@link #stopUpdates} cancels previous periodic update requests.
- *
- * The update interval is hard-coded to be 5 seconds.
- */
 public class MainActivity extends FragmentActivity implements
-
 		GooglePlayServicesClient.ConnectionCallbacks,
-		GooglePlayServicesClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
+		GooglePlayServicesClient.OnConnectionFailedListener,
+		com.google.android.gms.location.LocationListener {
 
 	// A request to connect to Location Services
 	private LocationRequest mLocationRequest;
@@ -74,65 +56,32 @@ public class MainActivity extends FragmentActivity implements
 	// Stores the current instantiation of the location client in this object
 	private LocationClient mLocationClient;
 
-	// Handles to UI widgets
+	// Handles to UI views
 	private TextView mLatLng;
 	private TextView mAddress;
-	private ProgressBar mActivityIndicator;
-	// private TextView mConnectionState;
+	private ProgressBar mProgressBar;
 	private TextView mConnectionStatus;
 
-	// Handle to SharedPreferences for this app
+	// Handle to SharedPreferences and editor for this app
 	SharedPreferences mPrefs;
-
-	// Handle to a SharedPreferences editor
 	SharedPreferences.Editor mEditor;
 
-	/*
-	 * Note if updates have been turned on. Starts out as "false"; is set to "true" in the
-	 * method handleRequestSuccess of LocationUpdateReceiver.
-	 *
-	 */
-	// boolean mUpdatesRequested = false;
-
-	/*
-	 * Initialize the Activity
-	 */
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		// getWindow().setFormat(PixelFormat.RGBA_8888);
-		// /getWindow().addFlags(WindowManager.LayoutParams.FLAG_DITHER);
 		setContentView(R.layout.activity_main);
 
 		// Get handles to the UI view objects
 		mLatLng = (TextView) findViewById(R.id.lat_lng);
 		mAddress = (TextView) findViewById(R.id.address);
-		mActivityIndicator = (ProgressBar) findViewById(R.id.address_progress);
-		// mConnectionState = (TextView) findViewById(R.id.text_connection_state);
+		mProgressBar = (ProgressBar) findViewById(R.id.address_progress);
 		mConnectionStatus = (TextView) findViewById(R.id.text_connection_status);
 
 		// Create a new global location parameters object
 		mLocationRequest = LocationRequest.create();
 
-		/*
-		 * Set the update interval
-		 */
-		mLocationRequest.setInterval(LocationUtils.UPDATE_INTERVAL_IN_MILLISECONDS);
-
 		// Use high accuracy
 		mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
-		// Set the interval ceiling to one minute
-		mLocationRequest.setFastestInterval(LocationUtils.FAST_INTERVAL_CEILING_IN_MILLISECONDS);
-
-		// Note that location updates are off until the user turns them on
-		// mUpdatesRequested = false;
-
-		// Open Shared Preferences
-		mPrefs = getSharedPreferences(LocationUtils.SHARED_PREFERENCES, Context.MODE_PRIVATE);
-
-		// Get an editor
-		mEditor = mPrefs.edit();
 
 		/*
 		 * Create a new location client, using the enclosing class to
@@ -142,41 +91,44 @@ public class MainActivity extends FragmentActivity implements
 
 	}
 
-	/*
-	 * Called when the Activity is no longer visible at all.
-	 * Stop updates and disconnect.
-	 */
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.main, menu);
+		return super.onCreateOptionsMenu(menu);
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+			case R.id.action_settings:
+				// Toast.makeText(this, "action_settings", Toast.LENGTH_SHORT).show();
+				startActivity(new Intent(this, PreferencesActivity.class));
+				return true;
+
+			case R.id.action_about:
+
+				Resources res = getResources();
+				String aboutText = res.getString(string.dialogAbout_aboutText);
+				String copyrightText = res.getString(string.copyright_text);
+				String okButtonText = res.getString(string.btnOK_text);
+				About.show(this, aboutText, copyrightText, okButtonText);
+				return true;
+
+			default:
+				return super.onOptionsItemSelected(item);
+		}
+
+	}
+
 	@Override
 	public void onStop() {
-
-		// If the client is connected
-		/*		if (mLocationClient.isConnected()) {
-					stopPeriodicUpdates();
-				}*/
-
 		// After disconnect() is called, the client is considered "dead".
 		mLocationClient.disconnect();
 
 		super.onStop();
 	}
 
-	/*
-	 * Called when the Activity is going into the background.
-	 * Parts of the UI may be visible, but the Activity is inactive.
-	 */
-	@Override
-	public void onPause() {
-
-		// Save the current setting for updates
-		/*		mEditor.putBoolean(LocationUtils.KEY_UPDATES_REQUESTED, mUpdatesRequested);
-				mEditor.commit();*/
-
-		super.onPause();
-	}
-
-	/*
-	 * Called when the Activity is restarted, even before it becomes visible.
-	 */
 	@Override
 	public void onStart() {
 
@@ -191,25 +143,6 @@ public class MainActivity extends FragmentActivity implements
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
-	}
-
-	/*
-	 * Called when the system detects that this Activity is now visible.
-	 */
-	@Override
-	public void onResume() {
-		super.onResume();
-
-		// If the app already has a setting for getting location updates, get it
-		/*		if (mPrefs.contains(LocationUtils.KEY_UPDATES_REQUESTED)) {
-					mUpdatesRequested = mPrefs.getBoolean(LocationUtils.KEY_UPDATES_REQUESTED, false);
-
-					// Otherwise, turn off location updates until requested
-				} else {
-					mEditor.putBoolean(LocationUtils.KEY_UPDATES_REQUESTED, false);
-					mEditor.commit();
-				}*/
 
 	}
 
@@ -252,8 +185,9 @@ public class MainActivity extends FragmentActivity implements
 
 						break;
 				}
+				break;
 
-				// If any other request code was received
+			// If any other request code was received
 			default:
 				// Report that this Activity received an unknown requestCode
 				Log.d(LocationUtils.APPTAG,
@@ -281,8 +215,9 @@ public class MainActivity extends FragmentActivity implements
 
 			// Continue
 			return true;
-			// Google Play services was not available for some reason
+
 		} else {
+			// Google Play services was not available for some reason
 			// Display an error dialog
 			Dialog dialog = GooglePlayServicesUtil.getErrorDialog(resultCode, this, 0);
 			if (dialog != null) {
@@ -292,26 +227,6 @@ public class MainActivity extends FragmentActivity implements
 			}
 			return false;
 		}
-	}
-
-	public void emailLocation(View v) {
-
-		/*getLocation(v);
-		getAddress(v);*/
-
-		StringBuilder sb = new StringBuilder();
-		sb.append(mLatLng.getText().toString())
-				.append("\n")
-				.append(mAddress.getText().toString());
-
-		Intent intent = new Intent(Intent.ACTION_SENDTO);
-		intent.setType("message/rfc822");
-		intent.putExtra(Intent.EXTRA_SUBJECT, "Location:");
-		intent.setData(Uri.parse("mailto:")); // only email apps should handle this
-		intent.putExtra(Intent.EXTRA_EMAIL, new String[] { "LorenABaker@comcast.net" });
-		intent.putExtra(Intent.EXTRA_TEXT, sb.toString());
-		Intent mailer = Intent.createChooser(intent, null);
-		startActivity(mailer);
 	}
 
 	/**
@@ -325,26 +240,73 @@ public class MainActivity extends FragmentActivity implements
 
 		// If Google Play Services is available
 		if (servicesConnected()) {
-
 			// Get the current location
 			Location currentLocation = mLocationClient.getLastLocation();
 
 			// Display the current location in the UI
 			mLatLng.setText(LocationUtils.getLatLng(this, currentLocation));
 			mAddress.setText("");
+
+			getAddress(currentLocation);
 		}
 	}
 
-	/**
-	 * Invoked by the "Get Address" button.
-	 * Get the address of the current location, using reverse geocoding. This only works if
-	 * a geocoding service is available.
-	 *
-	 * @param v The view object associated with this method, in this case a Button.
-	 */
-	// For Eclipse with ADT, suppress warnings about Geocoder.isPresent()
-	@SuppressLint("NewApi")
-	public void getAddress(View v) {
+	public void showLocation(View v) {
+		Location currentLocation = null;
+		Uri geoLocation = null;
+		if (servicesConnected()) {
+			// Get the current location
+			currentLocation = mLocationClient.getLastLocation();
+			if (currentLocation != null) {
+				geoLocation = getGeoLocation(currentLocation);
+			}
+
+			if (geoLocation != null) {
+				Intent intent = new Intent(Intent.ACTION_VIEW);
+				intent.setData(geoLocation);
+				if (intent.resolveActivity(getPackageManager()) != null) {
+					startActivity(intent);
+				}
+			}
+		}
+	}
+
+	public void emailLocation(View v) {
+
+		SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+		Resources res = getResources();
+		String emailRecipents = sharedPrefs.getString(res.getString(R.string.email_recipients_key),
+				res.getString(R.string.email_recipients_default));
+
+		StringBuilder sb = new StringBuilder();
+		sb.append(mLatLng.getText().toString())
+				.append("\n")
+				.append(mAddress.getText().toString());
+
+		Intent intent = new Intent(Intent.ACTION_SENDTO);
+		intent.setType("message/rfc822");
+		intent.putExtra(Intent.EXTRA_SUBJECT, "Location: ");
+		intent.setData(Uri.parse("mailto:")); // only email apps should handle this
+		if (!emailRecipents.equals(res.getString(R.string.email_recipients_default))) {
+			intent.putExtra(Intent.EXTRA_EMAIL, new String[] { emailRecipents });
+		}
+
+		intent.putExtra(Intent.EXTRA_TEXT, sb.toString());
+		Intent mailer = Intent.createChooser(intent, null);
+		startActivity(mailer);
+	}
+
+	private Uri getGeoLocation(Location currentLocation) {
+		StringBuilder geoLocation = new StringBuilder();
+		geoLocation.append("geo:0,0?q=")
+				.append(currentLocation.getLatitude())
+				.append(",")
+				.append(currentLocation.getLongitude());
+
+		return Uri.parse(geoLocation.toString());
+	}
+
+	public void getAddress(Location currentLocation) {
 
 		// In Gingerbread and later, use Geocoder.isPresent() to see if a geocoder is available.
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD && !Geocoder.isPresent()) {
@@ -359,15 +321,11 @@ public class MainActivity extends FragmentActivity implements
 					(ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
 			NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-			boolean isConnected = activeNetwork != null &&
-					activeNetwork.isConnectedOrConnecting();
-			if (isConnected) {
+			boolean isConnectedToInternet = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+			if (isConnectedToInternet) {
 
-				// Get the current location
-				Location currentLocation = mLocationClient.getLastLocation();
-
-				// Turn the indefinite activity indicator on
-				mActivityIndicator.setVisibility(View.VISIBLE);
+				// Turn the progress bar indicator on
+				mProgressBar.setVisibility(View.VISIBLE);
 
 				// Start the background task
 				(new MainActivity.GetAddressTask(this)).execute(currentLocation);
@@ -378,35 +336,6 @@ public class MainActivity extends FragmentActivity implements
 		}
 	}
 
-	/**
-	 * Invoked by the "Start Updates" button
-	 * Sends a request to start location updates
-	 *
-	 * @param v The view object associated with this method, in this case a Button.
-	 */
-	/*	public void startUpdates(View v) {
-			mUpdatesRequested = true;
-
-			if (servicesConnected()) {
-				startPeriodicUpdates();
-			}
-		}*/
-
-	/**
-	 * Invoked by the "Stop Updates" button
-	 * Sends a request to remove location updates
-	 * request them.
-	 *
-	 * @param v The view object associated with this method, in this case a Button.
-	 */
-	/*	public void stopUpdates(View v) {
-			mUpdatesRequested = false;
-
-			if (servicesConnected()) {
-				stopPeriodicUpdates();
-			}
-		}*/
-
 	/*
 	 * Called by Location Services when the request to connect the
 	 * client finishes successfully. At this point, you can
@@ -415,10 +344,6 @@ public class MainActivity extends FragmentActivity implements
 	@Override
 	public void onConnected(Bundle bundle) {
 		mConnectionStatus.setText(R.string.connected);
-
-		/*		if (mUpdatesRequested) {
-					startPeriodicUpdates();
-				}*/
 	}
 
 	/*
@@ -448,8 +373,7 @@ public class MainActivity extends FragmentActivity implements
 
 				// Start an Activity that tries to resolve the error
 				connectionResult.startResolutionForResult(
-						this,
-						LocationUtils.CONNECTION_FAILURE_RESOLUTION_REQUEST);
+						this, LocationUtils.CONNECTION_FAILURE_RESOLUTION_REQUEST);
 
 				/*
 				* Thrown if Google Play services canceled the original
@@ -482,25 +406,6 @@ public class MainActivity extends FragmentActivity implements
 		// In the UI, set the latitude and longitude to the value received
 		mLatLng.setText(LocationUtils.getLatLng(this, location));
 	}
-
-	/**
-	 * In response to a request to start updates, send a request
-	 * to Location Services
-	 */
-	/*	private void startPeriodicUpdates() {
-
-			mLocationClient.requestLocationUpdates(mLocationRequest, this);
-			// mConnectionState.setText(R.string.location_requested);
-		}*/
-
-	/**
-	 * In response to a request to stop updates, send a request to
-	 * Location Services
-	 */
-	/*	private void stopPeriodicUpdates() {
-			mLocationClient.removeLocationUpdates(this);
-			// mConnectionState.setText(R.string.location_updates_stopped);
-		}*/
 
 	/**
 	 * An AsyncTask that calls getFromLocation() in the background.
@@ -588,23 +493,42 @@ public class MainActivity extends FragmentActivity implements
 
 				// Get the first address
 				Address address = addresses.get(0);
+				String street = LocationUtils.EMPTY_STRING;
+				String city = LocationUtils.EMPTY_STRING;
+				String state = LocationUtils.EMPTY_STRING;
+				String zipCode = LocationUtils.EMPTY_STRING;
+				String countryName = LocationUtils.EMPTY_STRING;
 
-				// Format the first line of address
-				String addressText = getString(R.string.address_output_string,
+				// Format the address
+				StringBuilder addressText = new StringBuilder();
+				// If there's a street address, add it
+				street = address.getMaxAddressLineIndex() > 0 ? address.getAddressLine(0) : "";
+				// Locality is usually a city
+				city = address.getLocality();
+				// AdminArea is usually a state
+				state = address.getAdminArea();
+				zipCode = address.getPostalCode();
+				countryName = address.getCountryName();
+				String lineSep = System.getProperty("line.separator");
 
-						// If there's a street address, add it
-						address.getMaxAddressLineIndex() > 0 ?
-								address.getAddressLine(0) : "",
+				if (!street.isEmpty()) {
+					addressText.append(street).append(lineSep);
+				}
+				if (!city.isEmpty()) {
+					addressText.append(city);
+				}
+				if (!state.isEmpty()) {
+					addressText.append(", ").append(state);
+				}
+				if (!zipCode.isEmpty()) {
+					addressText.append(" ").append(zipCode);
+				}
+				if (!countryName.isEmpty()) {
+					addressText.append(lineSep).append(countryName);
+				}
 
-						// Locality is usually a city
-						address.getLocality(),
-
-						// The country of the address
-						address.getCountryName()
-						);
-
-				// Return the text
-				return addressText;
+				// Return the address text
+				return addressText.toString();
 
 				// If there aren't any addresses, post a message
 			} else {
@@ -620,7 +544,7 @@ public class MainActivity extends FragmentActivity implements
 		protected void onPostExecute(String address) {
 
 			// Turn off the progress bar
-			mActivityIndicator.setVisibility(View.GONE);
+			mProgressBar.setVisibility(View.GONE);
 
 			// Set the address in the UI
 			mAddress.setText(address);
@@ -690,21 +614,4 @@ public class MainActivity extends FragmentActivity implements
 		}
 	}
 
-	/*	@Override
-		public void onStatusChanged(String provider, int status, Bundle extras) {
-			// TODO Auto-generated method stub
-
-		}
-
-		@Override
-		public void onProviderEnabled(String provider) {
-			// TODO Auto-generated method stub
-
-		}
-
-		@Override
-		public void onProviderDisabled(String provider) {
-			// TODO Auto-generated method stub
-
-		}*/
 }

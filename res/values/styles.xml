@@ -2,7 +2,7 @@
 
 	<!--
         Base application theme, dependent on API level. This theme is replaced
-        by AppBaseTheme from res/values-vXX/styles.xml on newer devices.
+        by AppBaseTheme from res/values-vXX/styles.xml on newer devices.
 	-->
 	<style name="AppBaseTheme" parent="android:Theme.Light">
 		<!--
@@ -18,7 +18,7 @@
 	</style>
 
 	<style name="btnStyleShakespeare" parent="@android:style/Widget.Button">
-		<item name="android:textSize">25sp</item>
+		<item name="android:textSize">@dimen/TextSize_Button</item>
 		<item name="android:textStyle">bold</item>
 		<item name="android:textColor">#FFFFFF</item>
 		<item name="android:gravity">center</item>
@@ -27,8 +27,21 @@
 		<item name="android:shadowDy">1</item>
 		<item name="android:shadowRadius">0.6</item>
 		<item name="android:background">@drawable/custom_btn_shakespeare</item>
-		<item name="android:padding">10dp</item>
-		<item name="android:layout_marginTop">15dp</item>
+		<item name="android:padding">@dimen/Button_Padding</item>
+		<item name="android:layout_marginTop">@dimen/Button_TopMargin</item>
+	</style>
+
+	<style name="tvText" parent="@android:style/Widget.TextView">
+		<item name="android:textSize">@dimen/TextSize_Normal</item>
+	</style>
+
+	<style name="tvText.bold">
+		<item name="android:textSize">@dimen/TextSize_Label</item>
+		<item name="android:textStyle">bold</item>
+	</style>
+
+	<style name="tvComment" parent="@android:style/Widget.TextView">
+		<item name="android:textSize">@dimen/TextSize_Comment</item>
 	</style>
 
 </resources>
